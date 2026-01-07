@@ -3,12 +3,19 @@ import { PencilLine } from "lucide-react";
 import { AppSidebar } from "@/components/common";
 import { SkeletonHotTopic } from "@/components/skeleton/hot-topic.tsx";
 import { SkeletonNewTopic } from "@/components/skeleton/new-topic.tsx";
+import { useNavigate } from "react-router";
 
 const App = () => {
+  const navigate = useNavigate();
+
   return (
     <main className="w-full h-full min-h-[720px] flex p-6 gap-6">
       <div className="fixed right-1/2 bottom-10 translate-x-1/2 z-20 item-center">
-        <Button variant={"destructive"} className="!py-5 !px-6 rounded-full">
+        <Button
+          variant={"destructive"}
+          className="!py-5 !px-6 rounded-full"
+          onClick={() => navigate("/topics/create")}
+        >
           <PencilLine />
           나만의 토픽 작성
         </Button>
