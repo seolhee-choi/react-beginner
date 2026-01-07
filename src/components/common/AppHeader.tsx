@@ -7,7 +7,7 @@ const AppHeader = () => {
         {/*로고 & 네비게이션 메뉴 UI*/}
         <div className="flex items-center gap-5">
           <img
-            src="https://i.pinimg.com/1200x/1c/74/6f/1c746f12c6bc7a4ad8843384ef461405.jpg"
+            src="https://avatars.githubusercontent.com/u/81903004?s=400&u=c7fad6726c7d6b1d590b48b4647de74e9f7a136a&v=4"
             alt="@LOGO"
             className="w-6 h-6 cursor-pointer"
           />
