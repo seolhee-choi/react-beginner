@@ -8,7 +8,8 @@ import App from "./pages"; // 메인페이지
 import SignUp from "@/pages/sign-up"; // 회원가입 페이지
 import SignIn from "@/pages/sign-in"; // 로그인 페이지
 import RootLayout from "@/layout.tsx"; // 전역 레이아웃 컴포넌트
-import CreateTopic from "@/pages/topics/create.tsx"; // 토픽 생성 페이지
+import CreateTopic from "@/pages/topics/create.tsx";
+import { Toaster } from "@/components/ui/sonner.tsx"; // 토픽 생성 페이지
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -23,6 +24,7 @@ createRoot(document.getElementById("root")!).render(
           </Route>
         </Routes>
       </BrowserRouter>
+      <Toaster richColors position="top-center" />
     </ThemeProvider>
   </StrictMode>
 );

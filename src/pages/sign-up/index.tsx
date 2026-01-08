@@ -15,9 +15,11 @@ import {
   Label,
   Separator,
 } from "@/components/ui";
-import { NavLink } from "react-router";
+import { NavLink, useNavigate } from "react-router";
 import { ArrowLeft, Asterisk, ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import supabase from "@/lib/supabase.ts";
 
 const formSchema = z
   .object({
@@ -42,6 +44,8 @@ const formSchema = z
   });
 
 const SignUp = () => {
+  const navigate = useNavigate();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -59,8 +63,63 @@ const SignUp = () => {
   const handleCheckPrivacy = () => setPrivacyAgreed(!privacyAgreed);
   const handleCheckMarketing = () => setMarketingAgreed(!marketingAgreed);
 
-  const onSubmit = () => {
-    console.log("gkgkgk");
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log("회원가입 버튼 클릭");
+
+    if (!serviceAgreed || !privacyAgreed) {
+      // 경고 메시지 - Toast UI 발생
+      toast.warning("필수 동의항목을 체크해주세요.");
+      return;
+    }
+
+    // try-catch 에서 잡히는 에러는 자바스크립트가 실행될 때, 런타임 환경에서 발생하는 에러를 처리
+    try {
+      const {
+        data: { user, session },
+        error,
+      } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+      });
+
+      // 회원가입 실패 : try-catch와 다르게 supabase를 호출하면서 발생하는 에러
+      if (error) {
+        // 에러 메시지 - Toast UI 발생
+        toast.error(error.message);
+        return;
+      }
+
+      // 회원가입 성공
+      if (user && session) {
+        const { data, error } = await supabase
+          .from("user")
+          .insert([
+            {
+              id: user.id,
+              service_agreed: serviceAgreed,
+              privacy_agreed: privacyAgreed,
+              marketing_agreed: marketingAgreed,
+            },
+          ])
+          .select();
+
+        if (data) {
+          // 성공 메시지 - Toast UI 발생
+          toast.success("회원가입을 완료하였습니다.");
+          // 로그인 페이지로 리다이렉트
+          navigate("/sign-in");
+        }
+
+        if (error) {
+          // 에러 메시지 - Toast UI 발생
+          toast.error(error.message);
+          return;
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      throw new Error(`${error}`);
+    }
   };
 
   return (
