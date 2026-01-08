@@ -1,8 +1,13 @@
 import { Separator } from "@/components/ui";
 import { NavLink, useNavigate } from "react-router";
+import { useAuthStore } from "@/stores";
 
 const AppHeader = () => {
   const navigate = useNavigate();
+
+  const email = useAuthStore((state) => state.email);
+  const reset = useAuthStore((state) => state.reset);
+
   return (
     <header className="fixed top-0 z-10 w-full flex item-center justify-center bg-[#121212]">
       <div className="w-full max-w-[1328px] flex items-center justify-between px-6 py-3">
@@ -20,8 +25,18 @@ const AppHeader = () => {
             <div className="font-semibold">포트폴리오</div>
           </div>
         </div>
-        {/*로그인 UI*/}
-        <NavLink to={"/sign-in"}>로그인</NavLink>
+
+        {email ? (
+          <div className="flex items-center gap-5">
+            <span>{email}</span>
+            <Separator orientation="vertical" className="!h-4" />
+            <span className="cursor-pointer" onClick={reset}>
+              로그아웃
+            </span>
+          </div>
+        ) : (
+          <NavLink to={"/sign-in"}>로그인</NavLink>
+        )}
       </div>
     </header>
   );

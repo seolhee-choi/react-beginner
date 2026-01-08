@@ -15,6 +15,7 @@ import {
 import { NavLink, useNavigate } from "react-router";
 import supabase from "@/lib/supabase.ts";
 import { toast } from "sonner";
+import { useAuthStore } from "@/stores";
 
 const formSchema = z.object({
   email: z.email({
@@ -35,11 +36,18 @@ const SignIn = () => {
     },
   });
 
+  const setId = useAuthStore((state) => state.setId);
+  const setEmail = useAuthStore((state) => state.setEmail);
+  const setRole = useAuthStore((state) => state.setRole);
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log("gkgkgk");
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const {
+        data: { user, session },
+        error,
+      } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
@@ -50,10 +58,14 @@ const SignIn = () => {
       }
       // console.log(data);
 
-      if (data) {
+      if (user && session) {
         // data는 2개의 객체 데이터를 전달한다.
         // 1. session
         // 2. user
+        setId(user.id);
+        setEmail(user.email as string);
+        setRole(user.role as string);
+
         toast.success("로그인을 성공하였습니다");
         navigate("/");
       }
