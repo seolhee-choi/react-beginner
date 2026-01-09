@@ -9,24 +9,108 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-  Skeleton,
 } from "@/components/ui";
 import { ArrowLeft, Asterisk, BookOpenCheck, ImageOff, Save } from "lucide-react";
 import { TOPIC_CATEGORY } from "@/constants/category.constant.tsx";
-import { AppEditor } from "@/components/common";
+import { AppEditor, AppFileUpload } from "@/components/common";
+import { useState } from "react";
+import { useParams } from "react-router";
+import { toast } from "sonner";
+import { useAuthStore } from "@/stores";
+import type { Block } from "@blocknote/core";
+import supabase from "@/lib/supabase.ts";
+import { nanoid } from "nanoid";
 
 const CreateTopic = () => {
+  const user = useAuthStore((state) => state.user);
+  const { id } = useParams();
+
+  const [title, setTitle] = useState<string>("");
+  const [content, setContent] = useState<Block[]>([]);
+  const [category, setCategory] = useState<string>("");
+  const [thumbnail, setThumbnail] = useState<File | string | null>(null);
+
+  const handleSave = async () => {
+    if (!title && !content && !category && !thumbnail) {
+      toast.warning("제목, 본문, 카테고리, 썸네일을 기입하세요.");
+      return;
+    }
+
+    // 1. 파일 업로드시, Supabase의 Storage 즉, buckey 폴더에 이미지를 먼저 업로드 한 후
+    // 이미지가 저장된 bucket 폴더의 경로 URL 주소를 우리가 관리하고 있는 Topic 테이블 thumbnail 컬럼에 문자열 형태
+    // 즉, string 타입 (DB에서는 Text 타입)으로 저장한다.
+
+    let thumbnailUrl: string | null = null;
+
+    if (thumbnail && thumbnail instanceof File) {
+      // 썸네일 이미지를 storage에 업로드
+      const fileExt = thumbnail.name.split(".").pop();
+      const fileName = `${nanoid()}.${fileExt}`;
+      const filePath = `topics/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("files")
+        .upload(filePath, thumbnail);
+
+      if (uploadError) throw uploadError;
+
+      // 2. 업로드 된 이미지의 Public URL 값 가져오기
+      const { data } = supabase.storage.from("files").getPublicUrl(filePath);
+
+      if (!data) throw new Error("썸네일 Public url 조회를 실패하였습니다.");
+      thumbnailUrl = data.publicUrl;
+    }
+
+    const { data, error } = await supabase
+      .from("topic")
+      .update([
+        {
+          title,
+          content: JSON.stringify(content),
+          category,
+          thumbnail: thumbnailUrl,
+          author: user.id,
+        },
+      ])
+      .eq("id", id)
+      .select();
+
+    if (data) {
+      toast.success("작성중인 토픽을 저장하였습니다.");
+      return;
+    }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+  };
+  const handlePublish = () => {
+    if (!title || !content || !category || !thumbnail) {
+      toast.warning("제목, 본문, 카테고리, 썸네일은 필수값입니다.");
+      return;
+    }
+  };
   return (
     <main className="w-full h-full min-h-[1024px] flex gap-6">
       <div className="fixed right-1/2 bottom-10 translate-x1/2 z-20 flex items-center gap-2">
         <Button variant={"outline"} size={"icon"}>
           <ArrowLeft />
         </Button>
-        <Button variant={"outline"} className="w-22 !bg-yellow-800/50">
+        <Button
+          type="button"
+          variant={"outline"}
+          className="w-22 !bg-yellow-800/50"
+          onClick={handleSave}
+        >
           <Save />
           저장
         </Button>
-        <Button variant={"outline"} className="w-22 !bg-emerald-800/50">
+        <Button
+          type="button"
+          variant={"outline"}
+          className="w-22 !bg-emerald-800/50"
+          onClick={handlePublish}
+        >
           <BookOpenCheck />
           발행
         </Button>
@@ -44,6 +128,8 @@ const CreateTopic = () => {
           </div>
           <Input
             placeholder="토픽 제목을 입력하세요."
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
             className="h-16 pl-6 !text-lg placeholder:text-lg placeholder:font-semibold border-0"
           />
         </div>
@@ -53,7 +139,7 @@ const CreateTopic = () => {
             <Label className="text-muted-foreground">본문</Label>
           </div>
           {/* BlockNote Text Editor UI */}
-          <AppEditor />
+          <AppEditor setContent={setContent} />
         </div>
       </section>
       {/* 카테고리 및 썸네일 등록 */}
@@ -67,7 +153,7 @@ const CreateTopic = () => {
             <Asterisk size={14} className="text-[#F96859]" />
             <Label className="text-muted-foreground">카테고리</Label>
           </div>
-          <Select>
+          <Select onValueChange={(value) => setCategory(value)}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="토픽(주제) 선택" />
             </SelectTrigger>
@@ -91,7 +177,8 @@ const CreateTopic = () => {
             <Label className="text-muted-foreground">썸네일</Label>
           </div>
           {/* 썸네일 UI */}
-          <Button variant={"outline"} className="border-0">
+          <AppFileUpload file={thumbnail} onChange={setThumbnail} />
+          <Button variant={"outline"} className="border-0" onClick={() => setThumbnail(null)}>
             <ImageOff />
             썸네일 제거
           </Button>

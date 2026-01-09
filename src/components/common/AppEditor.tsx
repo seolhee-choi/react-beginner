@@ -6,11 +6,17 @@ import { ko } from "@blocknote/core/locales";
 import "@blocknote/mantine/style.css";
 // Include the included Inter font
 import "@blocknote/core/fonts/inter.css";
+import type { Block } from "@blocknote/core";
 
-export const AppEditor = () => {
+interface Props {
+  setContent: (content: Block[]) => void;
+}
+
+export const AppEditor = ({ setContent }: Props) => {
   const editor = useCreateBlockNote({
     dictionary: ko,
   });
   // Render the editor
-  return <BlockNoteView editor={editor} />;
+  // editor.document를 사용하면, block note에 작성하는 내용이 setContent에 저장됨
+  return <BlockNoteView editor={editor} onChange={() => setContent(editor.document)} />;
 };
